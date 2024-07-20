@@ -3,18 +3,18 @@
 package mycheck
 
 import (
+	"errors"
 	"fmt"
 	"strings"
-	"errors"
 	"unicode"
 )
 
 type errorSlice []error
 
 var (
-	numErr = errors.New("found numbers")
+	numErr  = errors.New("found numbers")
 	longErr = errors.New("line is too long")
-	spcErr = errors.New("no two spaces")	
+	spcErr  = errors.New("no two spaces")
 )
 
 func (es errorSlice) Error() string {
@@ -36,11 +36,6 @@ func MyCheck(input string) error {
 	es := make(errorSlice, 3)
 	num_err := 0
 
-	if len(input) > 20 {
-		num_err++
-		es[1] = longErr
-	}
-
 	num_space := 0
 
 	for _, ch := range input {
@@ -52,6 +47,11 @@ func MyCheck(input string) error {
 		if ch == ' ' {
 			num_space++
 		}
+	}
+
+	if len(input) > 20 {
+		num_err++
+		es[1] = longErr
 	}
 
 	if num_space != 2 {

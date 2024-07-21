@@ -15,6 +15,12 @@ func TestAreaCalculator(t *testing.T) {
 		want1   float64
 	}{
 		{
+			"test rectangle",
+			[]Shape{NewRectangle(1, 1, shapeRectangle)},
+			"rectangle",
+			1,
+		},
+		{
 			"test rectangle-rectangle",
 			[]Shape{NewRectangle(1, 1, shapeRectangle), NewRectangle(2, 2, shapeRectangle)},
 			"rectangle-rectangle",

@@ -25,8 +25,10 @@ https://stackoverflow.com/questions/32151776/visualize-tree-in-bash-like-the-out
 */
 
 import (
+	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 /*
@@ -78,10 +80,46 @@ func main() {
 	}
 }
 
+func doReadTree(out io.Writer, path string, printFiles bool, prefix *strings.Builder) error {
+	files, err := os.ReadDir(path)
+	if err != nil {
+		return err
+	}
+
+	os.Chdir(path)
+	prefix.WriteString(BRANCHING_TRUNK)
+
+	for _, file := range files {
+		stat, err := os.Lstat(file.Name())
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprint(out, prefix.String())
+
+		mode := stat.Mode()
+
+		if mode.IsRegular() {
+			if printFiles {
+				fmt.Fprintln(out, file.Name())
+			}
+		} else {
+			fmt.Fprintln(out, file.Name())
+			doReadTree(out, file.Name(), printFiles, prefix)
+		}
+	}
+
+	os.Chdir("..")
+	prefix.Reset()
+
+	return err
+}
+
 // dirTree: `tree` program implementation, top-level function, signature is fixed.
 // Write `path` dir listing to `out`. If `prinFiles` is set, files is listed along with directories.
 func dirTree(out io.Writer, path string, printFiles bool) error {
 	// Function to implement, signature is given, don't touch it.
-
-	return nil
+	var prefix strings.Builder
+	err := doReadTree(out, path, printFiles, &prefix)
+	return err
 }

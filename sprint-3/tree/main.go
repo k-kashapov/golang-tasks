@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 )
 
 /*
@@ -80,37 +79,70 @@ func main() {
 	}
 }
 
-func doReadTree(out io.Writer, path string, printFiles bool, prefix *strings.Builder) error {
+func findLastDir(files []os.DirEntry) int {
+	last := -1
+	for i, file := range files {
+		if file.IsDir() {
+			last = i
+		}
+	}
+
+	return last
+}
+
+func doReadDir(out io.Writer, path string, printFiles bool, prefix string) error {
 	files, err := os.ReadDir(path)
 	if err != nil {
 		return err
 	}
 
 	os.Chdir(path)
-	prefix.WriteString(BRANCHING_TRUNK)
 
-	for _, file := range files {
-		stat, err := os.Lstat(file.Name())
-		if err != nil {
-			return err
+	var isLast bool
+	lastDir := findLastDir(files)
+	total := len(files)
+
+	for i, file := range files {
+		if !printFiles && !file.IsDir() {
+			continue
 		}
 
-		fmt.Fprint(out, prefix.String())
+		if printFiles {
+			isLast = i+1 == total
+		} else {
+			isLast = i == lastDir
+		}
 
-		mode := stat.Mode()
+		fmt.Fprint(out, prefix)
 
-		if mode.IsRegular() {
-			if printFiles {
-				fmt.Fprintln(out, file.Name())
+		var next_prefix string
+
+		if isLast {
+			fmt.Fprint(out, LAST_BRANCH)
+			next_prefix = prefix + LAST_TAB
+		} else {
+			fmt.Fprint(out, BRANCHING_TRUNK)
+			next_prefix = prefix + TRUNC_TAB
+		}
+
+		fmt.Fprint(out, file.Name())
+
+		if printFiles && !file.IsDir() {
+			stat, _ := os.Lstat(file.Name())
+			size := stat.Size()
+			if size == 0 {
+				fmt.Fprintln(out, " (empty)")
+			} else {
+				fmt.Fprintf(out, " (%db)\n", size)
 			}
 		} else {
-			fmt.Fprintln(out, file.Name())
-			doReadTree(out, file.Name(), printFiles, prefix)
+			fmt.Fprintln(out, "")
 		}
+
+		doReadDir(out, file.Name(), printFiles, next_prefix)
 	}
 
 	os.Chdir("..")
-	prefix.Reset()
 
 	return err
 }
@@ -119,7 +151,6 @@ func doReadTree(out io.Writer, path string, printFiles bool, prefix *strings.Bui
 // Write `path` dir listing to `out`. If `prinFiles` is set, files is listed along with directories.
 func dirTree(out io.Writer, path string, printFiles bool) error {
 	// Function to implement, signature is given, don't touch it.
-	var prefix strings.Builder
-	err := doReadTree(out, path, printFiles, &prefix)
+	err := doReadDir(out, path, printFiles, ROOT_PREFIX)
 	return err
 }
